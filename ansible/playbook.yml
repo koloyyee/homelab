@@ -1,0 +1,20 @@
+- name: My first play
+  hosts: homelab
+  become: true
+  tasks:
+    # Sensity test
+    - name: Ping my host
+      ansible.builtin.ping:
+
+    - name: Update apt cache and upgrade system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3000
+    
+    - name: Configure system to keep running while lid closed
+      lineinfile:
+        path: /etc/systemd/logind.conf
+        regexp: '^#?HandleLidSwitch='
+        line: 'HandleLidSwitch=ignore'
+      notify: Restart systemd-logind
