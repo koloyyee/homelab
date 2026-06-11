@@ -1,4 +1,4 @@
-- name: My first play
+- name: Homelab Setup Playbook
   hosts: homelab
   become: true
   tasks:
@@ -18,3 +18,15 @@
         regexp: '^#?HandleLidSwitch='
         line: 'HandleLidSwitch=ignore'
       notify: Restart systemd-logind
+
+    - name: Install utilities
+      apt:
+        name:
+          - curl
+          - git
+          - ufw
+        state: present
+    - name: Restart system-logind
+      systemd:
+        name: systemd-logind
+        state: restarted
