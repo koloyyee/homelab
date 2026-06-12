@@ -25,7 +25,7 @@ resource "docker_volume" "proxy_letsencrypt" {
 }
 
 resource "docker_volume" "immich_db" {
-	name = "immich_postgres_data"
+  name = "immich_postgres_data"
 }
 
 # 2. Edge Gateway 
@@ -37,16 +37,17 @@ resource "docker_container" "nginx_proxy" {
 
   ports {
     internal = 80
-    external = 8080
+    external = 80
   }
   ports {
     internal = 443
-    external = 8443
+    external = 443
   }
   ports {
     internal = 81
     external = 81
   }
+
 
   volumes {
     volume_name    = docker_volume.proxy_data.name
@@ -64,13 +65,13 @@ resource "docker_container" "nginx_proxy" {
 
 # 3. Calibre-Web for Ebooks
 resource "docker_container" "calibre_web" {
-  name    = "callibre-web"
+  name    = "calibre-web"
   image   = "lscr.io/linuxserver/calibre-web:latest"
   restart = "unless-stopped"
 
   env = [
     "PUID=1000",
-    "PUID=1000",
+    "PGID=1000",
     "TZ=America/Toronto",
     "DOCKER_MODS=linuxserver/mods:universal-calibre"
   ]
@@ -90,9 +91,10 @@ resource "docker_container" "calibre_web" {
 }
 
 # 4. Immich for Photo Storage
+# 4. Immich for Photo Storage
 resource "docker_container" "immich_postgres" {
-  name    = "immich_postgres"
-  image   = "tensorchord/pgvecto-rs:pg16-v0.3.0"
+  name    = "immich-postgres"
+  image   = "tensorchord/pgvecto-rs:pg14-v0.2.0"
   restart = "unless-stopped"
 
   env = [
@@ -103,7 +105,7 @@ resource "docker_container" "immich_postgres" {
 
   volumes {
     volume_name    = docker_volume.immich_db.name
-    container_path = "/var/lib/postgres/data"
+    container_path = "/var/lib/postgresql/data"
   }
 
   networks_advanced {
@@ -111,28 +113,38 @@ resource "docker_container" "immich_postgres" {
   }
 }
 
+resource "docker_container" "immich_redis" {
+  name    = "redis"
+  image   = "redis:6.2-alpine"
+  restart = "unless-stopped"
+  networks_advanced {
+    name = docker_network.proxy_net.name
+  }
+}
+
 resource "docker_container" "immich_server" {
-  name  = "immich_server"
-  image = "ghcr.io/immich-app/immich-server:v1.105.1"
+  name    = "immich-server"
+  image   = "ghcr.io/immich-app/immich-server:v1.106.4"
   restart = "unless-stopped"
 
   env = [
-	"DB_HOSTNAME=immich_postgres",
-	"DB_USER=immich",
+    "DB_HOSTNAME=immich-postgres",
+    "DB_USERNAME=immich",
     "DB_PASSWORD=S3cuRe_photo_p@$$",
-	"DB_DATABASE_NAME=immich",
-	"IMMICH_MEDIA_LOCATION=/usr/src/app/upload"
+    "DB_DATABASE_NAME=immich",
+    "IMMICH_MEDIA_LOCATION=/usr/src/app/upload"
   ]
 
   volumes {
-	host_path = "/home/loyyeeko/media/photos"
-	container_path = "/usr/src/app/upload"
+    host_path      = "/home/loyyeeko/media/photos"
+    container_path = "/usr/src/app/upload"
   }
   networks_advanced {
-	name = docker_network.proxy_net.name
+    name = docker_network.proxy_net.name
   }
 
-  depends_on = [  
-	docker_container.immich_postgres
-   ]
+  depends_on = [
+    docker_container.immich_postgres,
+    docker_container.immich_redis
+  ]
 }
