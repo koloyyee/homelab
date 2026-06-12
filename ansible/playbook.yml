@@ -26,6 +26,7 @@
           - git
           - ufw
         state: present
+        
     - name: Restart system-logind
       systemd:
         name: systemd-logind
