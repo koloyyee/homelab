@@ -11,12 +11,12 @@
         update_cache: yes
         upgrade: dist
         cache_valid_time: 3000
-    
+
     - name: Configure system to keep running while lid closed
       lineinfile:
         path: /etc/systemd/logind.conf
-        regexp: '^#?HandleLidSwitch='
-        line: 'HandleLidSwitch=ignore'
+        regexp: "^#?HandleLidSwitch="
+        line: "HandleLidSwitch=ignore"
       notify: Restart systemd-logind
 
     - name: Install utilities
@@ -25,8 +25,13 @@
           - curl
           - git
           - ufw
+          - acpi
+          - brightnessctl
         state: present
-        
+
+    - name: Reduce laptop screen brightness to 1%
+      ansible.builtin.command: brightnessctl set 1%
+
     - name: Restart system-logind
       systemd:
         name: systemd-logind
