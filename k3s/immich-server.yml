@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich-server
+  template:
+    metadata:
+      labels:
+        app: immich-server
+    spec:
+      containers:
+      - name: immich-server
+        image: ghcr.io/immich-app/immich-server:v1.106.4
+        env:
+        - name: DB_HOSTNAME
+          value: "immich-postgres"
+        - name: REDIS_HOSTNAME
+          value: "immich-redis"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: immich-db-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: immich-db-secret
+              key: POSTGRES_PASSWORD
+        - name: DB_DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: immich-db-secret
+              key: POSTGRES_DB
+        - name: IMMICH_MEDIA_LOCATION
+          value: /usr/src/app/upload
+        ports:
+        - containerPort: 2283
+        volumeMounts:
+        - name: immich-photos
+          mountPath: /usr/src/app/upload
+      volumes:
+      - name: immich-photos
+        hostPath:
+          path: /home/loyyeeko/media/photos
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-service
+spec:
+  selector:
+    app: immich-server
+  ports:
+  - port: 2283
+    targetPort: 2283

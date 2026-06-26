@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich
+  labels:
+    app: immich
+# The Selector (The Matchmaker)
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: immich
+# The Pod Template (The Blueprint)
+  template:
+    metadata:
+      labels:
+        app: immich
+    spec:
+      containers:
+      # Postgres
+      - name: immich-postgres
+        image: tensorchord/pgvecto-rs:pg14-v0.2.0
+        env:
+        - name: POSTGRES_USER
+          value: immich
+        - name: POSTGRES_PASSWORD
+          value: S3cuRe_photo_p@$$
+        - name: POSTGRES_DB
+          value: immich
+        volumeMounts:
+        - name: immich-db-data
+          mountPath: /var/lib/postgresql/data
+      # Redis
+      - name: redis
+        image: redis:6.2-alpine
+      # Immich Server
+      - name: immich-server
+        image: ghcr.io/immich-app/immich-server:v1.106.4
+        env:
+        - name: DB_HOSTNAME
+          value: 127.0.0.1
+        - name: REDIS_HOSTNAME
+          value: 127.0.0.1
+        - name: DB_USERNAME
+          value: immich
+        - name: DB_PASSWORD
+          value: S3cuRe_photo_p@$$
+        - name: DB_DATABASE_NAME
+          value: immich
+        - name: IMMICH_MEDIA_LOCATION
+          value: /usr/src/app/upload
+        ports:
+        - containerPort: 2283
+        volumeMounts:
+        - name: immich-photos
+          mountPath: /usr/src/app/upload
+
+# Host Storage Projections
+      volumes:
+      - name: immich-db-data
+        hostPath:
+          path: /home/loyyeeko/media/immich-db
+          type: DirectoryOrCreate
+      - name: immich-photos
+        hostPath:
+          path: /home/loyyeeko/media/photos
+          type: Directory
+
+---
+apiVersion: v1
+# The Service Layer (Internal DNS)
+kind: Service
+metadata:
+  name: immich-web-service
+spec:
+  selector:
+    app: immich
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 2283

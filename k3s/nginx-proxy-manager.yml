@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-proxy-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-proxy-manager
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy-manager
+    spec:
+      hostNetwork: true
+      containers:
+      - name: nginx-proxy-manager
+        image: jc21/nginx-proxy-manager:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        - containerPort: 81
+        volumeMounts:
+        - name: npm-data
+          mountPath: /data
+        - name: npm-letsencrypt
+          mountPath: /etc/letsencrypt
+      volumes:
+      - name: npm-data
+        hostPath:
+          path: /home/loyyeeko/npm/data
+          type: DirectoryOrCreate
+      - name: npm-letsencrypt
+        hostPath:
+          path: /home/loyyeeko/npm/letsencrypt
+          type: DirectoryOrCreate

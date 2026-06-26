@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calibre-web
+  labels:
+    app: calibre-web
+# The Selector (The Matchmaker)
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calibre-web
+# The Pod Template (The Blueprint)
+  template:
+    metadata:
+      labels:
+        app: calibre-web
+    spec:
+      containers:
+      - name: calibre-web
+        image: lscr.io/linuxserver/calibre-web:latest
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "America/Toronto"
+        - name: DOCKER_MODS
+          value: "linuxserver/mods:universal-calibre"
+        ports:
+        - containerPort: 8083
+# Host Storage Projections
+        volumeMounts:
+        - name: calibre-config
+          mountPath: /config
+        - name: calibre-books
+          mountPath: /books
+      volumes:
+      - name: calibre-config
+        hostPath:
+          path: /home/loyyeeko/media/calibre-config
+          type: Directory
+      - name: calibre-books
+        hostPath:
+          path: /home/loyyeeko/media/books
+          type: Directory
+---
+apiVersion: v1
+# The Service Layer (Internal DNS)
+kind: Service
+metadata:
+  name: calibre-web-service
+spec:
+  selector:
+    app: calibre-web
+  ports:
+  - protocol: TCP
+    port: 8083
+    targetPort: 8083
